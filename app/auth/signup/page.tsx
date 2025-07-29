@@ -77,14 +77,17 @@ export default function SignUpPage() {
         email: formData.email,
         password: formData.password,
         redirect: false,
+        callbackUrl: '/',
       });
 
-      if (signInResult?.ok) {
-        router.push('/dashboard');
+      if (signInResult?.ok && !signInResult.error) {
+        // Successful login, redirect to main page
+        router.push('/');
       } else {
-        // If auto sign-in fails, redirect to sign-in page
+        // If auto sign-in fails, show success message and redirect to sign-in page
+        console.error('Auto sign-in failed:', signInResult?.error);
         setTimeout(() => {
-          router.push('/auth/signin');
+          router.push('/auth/signin?message=Registration successful. Please sign in.');
         }, 2000);
       }
     } catch (error: any) {

@@ -71,10 +71,22 @@ export const authOptions: NextAuthOptions = {
       }
       return session
     },
+    async redirect({ url, baseUrl }) {
+      // Handle callback URLs properly
+      if (url.startsWith('/')) {
+        return `${baseUrl}${url}`
+      }
+      // Allow callback URLs on the same origin
+      if (new URL(url).origin === baseUrl) {
+        return url
+      }
+      return baseUrl
+    },
   },
   pages: {
     signIn: '/auth/signin',
     error: '/auth/error',
   },
+  debug: process.env.NODE_ENV === 'development',
   secret: process.env.NEXTAUTH_SECRET,
 }

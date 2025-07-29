@@ -1,39 +1,54 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { signIn, getSession } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 
-export default function SignInPage() {
+function SignInForm() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [message, setMessage] = useState('');
   const router = useRouter();
+  const searchParams = useSearchParams();
+
+  useEffect(() => {
+    // Check for messages from URL parameters
+    const urlMessage = searchParams.get('message');
+    if (urlMessage) {
+      setMessage(urlMessage);
+    }
+  }, [searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setError('');
+    setMessage('');
 
     try {
+      // Get callback URL from search params or default to main page
+      const callbackUrl = searchParams.get('callbackUrl') || '/';
+
       const result = await signIn('credentials', {
         email,
         password,
         redirect: false,
+        callbackUrl,
       });
 
       if (result?.error) {
         setError('Invalid email or password');
+      } else if (result?.ok) {
+        // Successful sign in, redirect to callback URL or main page
+        router.push(callbackUrl);
       } else {
-        // Check if sign in was successful
-        const session = await getSession();
-        if (session) {
-          router.push('/dashboard');
-        }
+        setError('Sign in failed. Please try again.');
       }
     } catch (error) {
+      console.error('Sign in error:', error);
       setError('An error occurred. Please try again.');
     } finally {
       setIsLoading(false);
@@ -53,6 +68,13 @@ export default function SignInPage() {
               Sign in to your Pomodoro Timer account
             </p>
           </div>
+
+          {/* Success Message */}
+          {message && (
+            <div className="mb-6 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+              <p className="text-green-600 dark:text-green-400 text-sm">{message}</p>
+            </div>
+          )}
 
           {/* Error Message */}
           {error && (
@@ -137,5 +159,20 @@ export default function SignInPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function SignInPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+          <p className="text-gray-600 dark:text-gray-300">Loading...</p>
+        </div>
+      </div>
+    }>
+      <SignInForm />
+    </Suspense>
   );
 }

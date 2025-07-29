@@ -6,10 +6,11 @@ export default withAuth(
     const { pathname } = req.nextUrl
     const token = req.nextauth.token
 
-    // Allow access to auth pages and public assets
+    // Allow access to auth pages, registration API, and public assets
     if (
       pathname.startsWith('/auth/') ||
       pathname.startsWith('/api/auth/') ||
+      pathname === '/api/register' ||
       pathname.startsWith('/_next/') ||
       pathname.startsWith('/favicon.ico') ||
       pathname.startsWith('/timer-worker.js') ||
@@ -33,10 +34,11 @@ export default withAuth(
       authorized: ({ token, req }) => {
         const { pathname } = req.nextUrl
 
-        // Always allow access to auth pages and public assets
+        // Always allow access to auth pages, registration API, and public assets
         if (
           pathname.startsWith('/auth/') ||
           pathname.startsWith('/api/auth/') ||
+          pathname === '/api/register' ||
           pathname.startsWith('/_next/') ||
           pathname.startsWith('/favicon.ico') ||
           pathname.startsWith('/timer-worker.js') ||
