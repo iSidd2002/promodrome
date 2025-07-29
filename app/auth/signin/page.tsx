@@ -32,6 +32,12 @@ function SignInForm() {
       // Get callback URL from search params or default to main page
       const callbackUrl = searchParams.get('callbackUrl') || '/';
 
+      console.log('🔐 Attempting sign in with:', {
+        email,
+        callbackUrl,
+        hasPassword: !!password
+      });
+
       const result = await signIn('credentials', {
         email,
         password,
@@ -39,16 +45,21 @@ function SignInForm() {
         callbackUrl,
       });
 
+      console.log('🔐 Sign in result:', result);
+
       if (result?.error) {
+        console.error('❌ Sign in error:', result.error);
         setError('Invalid email or password');
       } else if (result?.ok) {
+        console.log('✅ Sign in successful, redirecting to:', callbackUrl);
         // Successful sign in, redirect to callback URL or main page
         router.push(callbackUrl);
       } else {
+        console.error('❌ Sign in failed with unknown result:', result);
         setError('Sign in failed. Please try again.');
       }
     } catch (error) {
-      console.error('Sign in error:', error);
+      console.error('💥 Sign in error:', error);
       setError('An error occurred. Please try again.');
     } finally {
       setIsLoading(false);
