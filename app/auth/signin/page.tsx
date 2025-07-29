@@ -52,8 +52,11 @@ function SignInForm() {
         setError('Invalid email or password');
       } else if (result?.ok) {
         console.log('✅ Sign in successful, redirecting to:', callbackUrl);
-        // Successful sign in, redirect to callback URL or main page
-        router.push(callbackUrl);
+
+        // Force a full page redirect to ensure proper authentication state
+        console.log('🔄 Using window.location.href for reliable redirect');
+        window.location.href = callbackUrl;
+        return; // Prevent further execution
       } else {
         console.error('❌ Sign in failed with unknown result:', result);
         setError('Sign in failed. Please try again.');

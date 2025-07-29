@@ -81,13 +81,15 @@ export default function SignUpPage() {
       });
 
       if (signInResult?.ok && !signInResult.error) {
-        // Successful login, redirect to main page
-        router.push('/');
+        // Successful login, redirect to main page using window.location for reliability
+        console.log('✅ Auto sign-in successful, redirecting to main page');
+        window.location.href = '/';
+        return;
       } else {
         // If auto sign-in fails, show success message and redirect to sign-in page
         console.error('Auto sign-in failed:', signInResult?.error);
         setTimeout(() => {
-          router.push('/auth/signin?message=Registration successful. Please sign in.');
+          window.location.href = '/auth/signin?message=Registration successful. Please sign in.';
         }, 2000);
       }
     } catch (error: any) {
