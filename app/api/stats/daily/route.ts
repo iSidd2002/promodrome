@@ -1,15 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { withAuth, getUserId, AuthErrors } from '@/lib/auth-guard';
 import { prisma } from '@/lib/prisma';
 
-export async function GET(request: NextRequest) {
+export const GET = withAuth(async (request: NextRequest, session: any) => {
   try {
-    const session = await getServerSession(authOptions);
-    
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const userId = getUserId(session);
 
     const { searchParams } = new URL(request.url);
     const dateParam = searchParams.get('date');
@@ -28,7 +23,7 @@ export async function GET(request: NextRequest) {
     // Fetch sessions for the date range
     const sessions = await prisma.pomodoroSession.findMany({
       where: {
-        userId: session.user.id,
+        userId,
         startTime: {
           gte: startDate,
           lte: endDate,
@@ -134,4 +129,4 @@ export async function GET(request: NextRequest) {
       { status: 500 }
     );
   }
-}
+})

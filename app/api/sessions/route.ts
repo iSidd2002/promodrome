@@ -1,24 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
+import { withAuth, getUserId, AuthErrors } from '@/lib/auth-guard'
 import { prisma } from '@/lib/prisma'
-import { authOptions } from '@/lib/auth'
 import { createSessionSchema, getSessionsSchema } from '@/lib/validations/session'
 import { ZodError } from 'zod'
 
-export async function POST(request: NextRequest) {
+export const POST = withAuth(async (request: NextRequest, session: any) => {
   try {
-    const session = await getServerSession(authOptions)
-    
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
+    const userId = getUserId(session)
     const body = await request.json()
     const { sessionType, plannedDuration, startTime, tags, notes } = createSessionSchema.parse(body)
 
     const pomodoroSession = await prisma.pomodoroSession.create({
       data: {
-        userId: session.user.id,
+        userId,
         sessionType,
         plannedDuration,
         startTime: new Date(startTime),
@@ -49,15 +43,11 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     )
   }
-}
+})
 
-export async function GET(request: NextRequest) {
+export const GET = withAuth(async (request: NextRequest, session: any) => {
   try {
-    const session = await getServerSession(authOptions)
-    
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+    const userId = getUserId(session)
 
     const { searchParams } = new URL(request.url)
     const queryParams = Object.fromEntries(searchParams.entries())
@@ -71,7 +61,7 @@ export async function GET(request: NextRequest) {
     } = getSessionsSchema.parse(queryParams)
 
     const where: Record<string, unknown> = {
-      userId: session.user.id,
+      userId,
     }
 
     if (type) {
@@ -124,4 +114,4 @@ export async function GET(request: NextRequest) {
       { status: 500 }
     )
   }
-}
+})

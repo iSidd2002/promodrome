@@ -8,6 +8,8 @@ import { useBackgroundTimer } from '@/hooks/useBackgroundTimer';
 import { useAudioNotifications } from '@/hooks/useAudioNotifications';
 import { usePerformanceMonitor } from '@/hooks/usePerformanceMonitor';
 import OptimizedTimerDisplay from '@/components/OptimizedTimerDisplay';
+import GuestPreview from '@/components/GuestPreview';
+import AuthBanner from '@/components/AuthBanner';
 
 // Types for our application
 type SessionType = 'pomodoro' | 'shortBreak' | 'longBreak';
@@ -379,6 +381,9 @@ export default function PomodoroTimer() {
         </div>
       </header>
 
+      {/* Authentication Banner for Guest Users */}
+      {!session && <AuthBanner />}
+
       {/* Timer Content */}
       <div className="flex items-center justify-center p-4" style={{ minHeight: 'calc(100vh - 4rem)' }}>
         <div className="w-full max-w-lg mx-auto">
@@ -417,7 +422,8 @@ export default function PomodoroTimer() {
           </div>
 
           {/* Control Buttons */}
-          <div className="flex flex-col sm:flex-row justify-center gap-3 sm:gap-4 mb-6 md:mb-8 px-4">
+          {session ? (
+            <div className="flex flex-col sm:flex-row justify-center gap-3 sm:gap-4 mb-6 md:mb-8 px-4">
             <button
               onClick={async () => {
                 if (!isWorkerReady) return;
@@ -474,7 +480,25 @@ export default function PomodoroTimer() {
             >
               🔄 Reset
             </button>
-          </div>
+            </div>
+          ) : (
+            <GuestPreview>
+              <div className="flex flex-col sm:flex-row justify-center gap-3 sm:gap-4 mb-6 md:mb-8 px-4">
+                <button
+                  className="w-full sm:w-auto px-6 sm:px-8 py-3 rounded-full font-semibold text-white bg-green-500 transition-all duration-200 cursor-not-allowed opacity-60"
+                  disabled
+                >
+                  ▶️ Start
+                </button>
+                <button
+                  className="w-full sm:w-auto px-6 sm:px-8 py-3 rounded-full font-semibold text-gray-700 dark:text-gray-300 bg-gray-200 dark:bg-gray-600 transition-all duration-200 cursor-not-allowed opacity-60"
+                  disabled
+                >
+                  🔄 Reset
+                </button>
+              </div>
+            </GuestPreview>
+          )}
 
           {/* Session Stats */}
           <div className="border-t dark:border-gray-700 pt-6">

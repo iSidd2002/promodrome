@@ -1,27 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
+import { withAuth, getUserId, AuthErrors } from '@/lib/auth-guard'
 import { prisma } from '@/lib/prisma'
-import { authOptions } from '@/lib/auth'
 import { userSettingsSchema } from '@/lib/validations/settings'
 import { ZodError } from 'zod'
 
-export async function GET() {
+export const GET = withAuth(async (request: NextRequest, session: any) => {
   try {
-    const session = await getServerSession(authOptions)
-    
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+    const userId = getUserId(session)
 
     const settings = await prisma.userSettings.findUnique({
-      where: { userId: session.user.id }
+      where: { userId }
     })
 
     if (!settings) {
       // Create default settings if they don't exist
       const defaultSettings = await prisma.userSettings.create({
         data: {
-          userId: session.user.id,
+          userId,
           pomodoroDuration: 25,
           shortBreakDuration: 5,
           longBreakDuration: 15,
@@ -41,24 +36,19 @@ export async function GET() {
       { status: 500 }
     )
   }
-}
+})
 
-export async function PUT(request: NextRequest) {
+export const PUT = withAuth(async (request: NextRequest, session: any) => {
   try {
-    const session = await getServerSession(authOptions)
-    
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
+    const userId = getUserId(session)
     const body = await request.json()
     const validatedData = userSettingsSchema.parse(body)
 
     const updatedSettings = await prisma.userSettings.upsert({
-      where: { userId: session.user.id },
+      where: { userId },
       update: validatedData,
       create: {
-        userId: session.user.id,
+        userId,
         ...validatedData,
       }
     })
@@ -85,4 +75,4 @@ export async function PUT(request: NextRequest) {
       { status: 500 }
     )
   }
-}
+})
