@@ -20,7 +20,7 @@ export default function AuthBanner() {
             </div>
             <div className="flex-1">
               <p className="text-sm font-medium">
-                🍅 <strong>Sign in required</strong> to use the Pomodoro Timer and track your productivity sessions.
+                🍅 <strong>Sign in to save your progress!</strong> Track your productivity sessions, sync across devices, and view detailed statistics.
               </p>
             </div>
           </div>

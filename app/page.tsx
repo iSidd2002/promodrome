@@ -387,6 +387,18 @@ export default function PomodoroTimer() {
       {/* Timer Content */}
       <div className="flex items-center justify-center p-4" style={{ minHeight: 'calc(100vh - 4rem)' }}>
         <div className="w-full max-w-lg mx-auto">
+          {/* Welcome Message for New Users */}
+          {!session && (
+            <div className="text-center mb-6">
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+                Welcome to Pomodoro Timer! 🍅
+              </h2>
+              <p className="text-gray-600 dark:text-gray-300">
+                Start using the timer right away. No sign-up required!
+              </p>
+            </div>
+          )}
+
         {/* Main Timer Card */}
         <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl p-6 md:p-8 text-center backdrop-blur-sm bg-opacity-95 dark:bg-opacity-95">
           {/* Session Type Tabs */}

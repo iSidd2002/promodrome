@@ -1,72 +1,56 @@
-import { withAuth } from "next-auth/middleware"
 import { NextResponse } from "next/server"
+import type { NextRequest } from "next/server"
 
-export default withAuth(
-  function middleware(req) {
-    const { pathname } = req.nextUrl
-    const token = req.nextauth.token
+export function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl
 
-    // Allow access to auth pages, registration API, test endpoints, and public assets
-    if (
-      pathname.startsWith('/auth/') ||
-      pathname.startsWith('/api/auth/') ||
-      pathname === '/api/register' ||
-      pathname === '/api/test-db' ||
-      pathname.startsWith('/_next/') ||
-      pathname.startsWith('/favicon.ico') ||
-      pathname.startsWith('/timer-worker.js') ||
-      pathname === '/manifest.json'
-    ) {
-      return NextResponse.next()
-    }
+  // 🎯 NEW APPROACH: Allow access to all routes by default
+  // Authentication is now OPTIONAL for enhanced features only
 
-    // Redirect unauthenticated users from protected pages to sign-in
-    if (!token) {
-      const signInUrl = new URL('/auth/signin', req.url)
-      signInUrl.searchParams.set('callbackUrl', req.url)
-      return NextResponse.redirect(signInUrl)
-    }
+  // Only protect specific API routes that require user data
+  const protectedApiRoutes = [
+    '/api/user/settings',
+    '/api/sessions',
+    '/api/stats/daily'
+  ]
 
-    // Allow authenticated users to access all pages
-    return NextResponse.next()
-  },
-  {
-    callbacks: {
-      authorized: ({ token, req }) => {
-        const { pathname } = req.nextUrl
+  // Check if this is a protected API route that requires authentication
+  if (protectedApiRoutes.some(route => pathname.startsWith(route))) {
+    // For protected API routes, check for authentication
+    const sessionCookie = request.cookies.get('next-auth.session-token') ||
+                         request.cookies.get('__Secure-next-auth.session-token')
 
-        // Always allow access to auth pages, registration API, test endpoints, and public assets
-        if (
-          pathname.startsWith('/auth/') ||
-          pathname.startsWith('/api/auth/') ||
-          pathname === '/api/register' ||
-          pathname === '/api/test-db' ||
-          pathname.startsWith('/_next/') ||
-          pathname.startsWith('/favicon.ico') ||
-          pathname.startsWith('/timer-worker.js') ||
-          pathname === '/manifest.json'
-        ) {
-          return true
+    if (!sessionCookie) {
+      // Return 401 for API routes that require auth, but don't redirect
+      return new NextResponse(
+        JSON.stringify({
+          error: 'Authentication required for this feature',
+          message: 'Please sign in to save your data and access personalized features'
+        }),
+        {
+          status: 401,
+          headers: { 'content-type': 'application/json' }
         }
-
-        // For all other pages, require authentication
-        return !!token
-      },
-    },
+      )
+    }
   }
-)
+
+  // Allow ALL other requests to proceed without authentication
+  // This includes:
+  // - Main timer page (/)
+  // - All timer functionality
+  // - Auth pages (/auth/*)
+  // - Public API routes
+  // - Static assets
+  return NextResponse.next()
+}
 
 export const config = {
   matcher: [
     /*
-     * Match all request paths except for the ones starting with:
-     * - api/auth (NextAuth.js API routes)
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * - timer-worker.js (Web Worker file)
-     * - manifest.json (PWA manifest)
+     * Only run middleware on API routes that might need protection
+     * All other routes are now freely accessible
      */
-    '/((?!api/auth|_next/static|_next/image|favicon.ico|timer-worker.js|manifest.json).*)',
+    '/api/((?!auth|register|test-db).*)',
   ],
 }
