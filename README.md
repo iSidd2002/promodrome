@@ -19,11 +19,13 @@ A beautiful, feature-rich Pomodoro Timer built with Next.js 15, TypeScript, and 
 - **Visual Progress** - Optimized circular progress indicator
 - **Pause/Resume** - Full control over your sessions
 
-### 🔐 **User Authentication**
+### 🔐 **Mandatory Authentication**
+- **Required Sign-in** - Authentication required for all timer functionality
 - **Secure Registration** - Create accounts with email and password
 - **Session Management** - Persistent login with NextAuth.js
-- **Protected Routes** - Secure access to user features
-- **Data Migration** - Seamless transfer from guest to authenticated user
+- **Protected Routes** - Server-side middleware protection for all pages
+- **API Protection** - All endpoints require authentication
+- **Guest Preview** - Visual preview with disabled functionality for unauthenticated users
 
 ### 📊 **Advanced Analytics**
 - **Session Tracking** - Complete history of all pomodoro sessions
@@ -159,17 +161,19 @@ See [DEPLOYMENT.md](./DEPLOYMENT.md) for detailed instructions.
 
 ## 📖 Usage
 
-### For Guest Users
-1. **Start Timer** - Use immediately without account
-2. **Customize Settings** - Adjust durations and preferences
-3. **Local Storage** - Settings saved locally
+### For Unauthenticated Users
+1. **Visual Preview** - See the timer interface design
+2. **Sign-in Prompts** - Clear calls-to-action for registration
+3. **Feature Highlights** - Learn about timer capabilities
+4. **Seamless Registration** - Quick account creation process
 
-### For Registered Users
-1. **Create Account** - Sign up with email and password
-2. **Session Tracking** - All sessions saved to database
-3. **View Statistics** - Detailed analytics and progress
-4. **Cross-device Sync** - Access from any device
-5. **Data Migration** - Transfer existing settings
+### For Authenticated Users
+1. **Full Timer Access** - Complete pomodoro timer functionality
+2. **Session Tracking** - All sessions automatically saved to database
+3. **Daily Statistics** - Comprehensive productivity analytics
+4. **Cross-device Sync** - Settings and data available everywhere
+5. **Background Timer** - Continues running when tab is not active
+6. **Audio Notifications** - Alerts work regardless of tab focus
 
 ### Key Features
 - **Timer Controls** - Start, pause, reset sessions
