@@ -1,0 +1,163 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(auto()) @map("_id") @db.ObjectId
+  email         String    @unique
+  password      String
+  name          String
+  avatar        String?
+  emailVerified DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Profile settings
+  timezone String?
+  theme    Theme   @default(SYSTEM)
+
+  // Preferences
+  notifications Boolean @default(true)
+  soundEnabled  Boolean @default(true)
+
+  // Relations
+  settings        UserSettings?
+  sessions        PomodoroSession[]
+  stats           UserStats[]
+  accounts        Account[]
+  sessions_auth   Session[]
+
+  @@map("users")
+}
+
+model Account {
+  id                String  @id @default(auto()) @map("_id") @db.ObjectId
+  userId            String  @db.ObjectId
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.String
+  access_token      String? @db.String
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.String
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  sessionToken String   @unique
+  userId       String   @db.ObjectId
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model VerificationToken {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verificationtokens")
+}
+
+model UserSettings {
+  id     String @id @default(auto()) @map("_id") @db.ObjectId
+  userId String @unique @db.ObjectId
+
+  // Timer durations (in minutes)
+  pomodoroDuration    Int @default(25)
+  shortBreakDuration  Int @default(5)
+  longBreakDuration   Int @default(15)
+  longBreakInterval   Int @default(4)
+
+  // Advanced settings
+  autoStartBreaks     Boolean @default(false)
+  autoStartPomodoros  Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_settings")
+}
+
+model PomodoroSession {
+  id     String @id @default(auto()) @map("_id") @db.ObjectId
+  userId String @db.ObjectId
+
+  sessionType     SessionType
+  plannedDuration Int // Duration in seconds
+  actualDuration  Int? // Actual time spent
+  completed       Boolean     @default(false)
+
+  startTime   DateTime
+  endTime     DateTime?
+  pausedTime  Int? // Total paused time in seconds
+
+  // Context data
+  tags  String[]
+  notes String?
+
+  createdAt DateTime @default(now())
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("pomodoro_sessions")
+}
+
+model UserStats {
+  id     String @id @default(auto()) @map("_id") @db.ObjectId
+  userId String @db.ObjectId
+
+  // Daily stats
+  date                DateTime
+  pomodorosCompleted  Int @default(0)
+  totalFocusTime      Int @default(0) // In seconds
+  totalBreakTime      Int @default(0) // In seconds
+
+  // Weekly/Monthly aggregates
+  weeklyPomodoros  Int @default(0)
+  monthlyPomodoros Int @default(0)
+
+  lastUpdated DateTime @updatedAt
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, date])
+  @@map("user_stats")
+}
+
+// Enums
+enum Theme {
+  LIGHT
+  DARK
+  SYSTEM
+}
+
+enum SessionType {
+  POMODORO
+  SHORT_BREAK
+  LONG_BREAK
+}
