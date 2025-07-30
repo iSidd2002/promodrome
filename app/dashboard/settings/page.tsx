@@ -147,44 +147,53 @@ export default function SettingsPage() {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Pomodoro Duration
+                    Pomodoro Duration (minutes)
                   </label>
                   <input
                     type="number"
                     min="1"
-                    max="60"
                     value={settings.pomodoroDuration}
-                    onChange={(e) => handleInputChange('pomodoroDuration', parseInt(e.target.value))}
+                    onChange={(e) => handleInputChange('pomodoroDuration', parseInt(e.target.value) || 1)}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="e.g., 25, 45, 90"
                   />
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    Set any duration you prefer (e.g., 10, 25, 45, 90 minutes)
+                  </p>
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Short Break Duration
+                    Short Break Duration (minutes)
                   </label>
                   <input
                     type="number"
                     min="1"
-                    max="30"
                     value={settings.shortBreakDuration}
-                    onChange={(e) => handleInputChange('shortBreakDuration', parseInt(e.target.value))}
+                    onChange={(e) => handleInputChange('shortBreakDuration', parseInt(e.target.value) || 1)}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="e.g., 5, 10, 15"
                   />
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    Set any short break duration (e.g., 2, 5, 10 minutes)
+                  </p>
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Long Break Duration
+                    Long Break Duration (minutes)
                   </label>
                   <input
                     type="number"
                     min="1"
-                    max="60"
                     value={settings.longBreakDuration}
-                    onChange={(e) => handleInputChange('longBreakDuration', parseInt(e.target.value))}
+                    onChange={(e) => handleInputChange('longBreakDuration', parseInt(e.target.value) || 1)}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="e.g., 15, 30, 60"
                   />
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    Set any long break duration (e.g., 15, 30, 60 minutes)
+                  </p>
                 </div>
               </div>
             </div>
@@ -201,12 +210,15 @@ export default function SettingsPage() {
                 </label>
                 <input
                   type="number"
-                  min="2"
-                  max="10"
+                  min="1"
                   value={settings.longBreakInterval}
-                  onChange={(e) => handleInputChange('longBreakInterval', parseInt(e.target.value))}
+                  onChange={(e) => handleInputChange('longBreakInterval', parseInt(e.target.value) || 1)}
                   className="w-full max-w-xs px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="e.g., 1, 2, 4, 8"
                 />
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  Take a long break after this many pomodoros (e.g., 1, 2, 4, 8)
+                </p>
               </div>
             </div>
 

@@ -656,10 +656,10 @@ export default function PomodoroTimer() {
                   <input
                     type="number"
                     min="1"
-                    max="60"
                     value={settings.pomodoroDuration}
-                    onChange={(e) => setSettings(prev => ({ ...prev, pomodoroDuration: parseInt(e.target.value) || 25 }))}
+                    onChange={(e) => setSettings(prev => ({ ...prev, pomodoroDuration: parseInt(e.target.value) || 1 }))}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Any duration you prefer"
                   />
                 </div>
 
@@ -670,10 +670,10 @@ export default function PomodoroTimer() {
                   <input
                     type="number"
                     min="1"
-                    max="30"
                     value={settings.shortBreakDuration}
-                    onChange={(e) => setSettings(prev => ({ ...prev, shortBreakDuration: parseInt(e.target.value) || 5 }))}
+                    onChange={(e) => setSettings(prev => ({ ...prev, shortBreakDuration: parseInt(e.target.value) || 1 }))}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Any duration you prefer"
                   />
                 </div>
 
@@ -684,10 +684,10 @@ export default function PomodoroTimer() {
                   <input
                     type="number"
                     min="1"
-                    max="60"
                     value={settings.longBreakDuration}
-                    onChange={(e) => setSettings(prev => ({ ...prev, longBreakDuration: parseInt(e.target.value) || 15 }))}
+                    onChange={(e) => setSettings(prev => ({ ...prev, longBreakDuration: parseInt(e.target.value) || 1 }))}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Any duration you prefer"
                   />
                 </div>
 
@@ -697,11 +697,11 @@ export default function PomodoroTimer() {
                   </label>
                   <input
                     type="number"
-                    min="2"
-                    max="10"
+                    min="1"
                     value={settings.longBreakInterval}
-                    onChange={(e) => setSettings(prev => ({ ...prev, longBreakInterval: parseInt(e.target.value) || 4 }))}
+                    onChange={(e) => setSettings(prev => ({ ...prev, longBreakInterval: parseInt(e.target.value) || 1 }))}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Any interval you prefer"
                   />
                 </div>
               </div>

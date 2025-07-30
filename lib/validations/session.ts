@@ -4,8 +4,7 @@ export const createSessionSchema = z.object({
   sessionType: z.enum(['POMODORO', 'SHORT_BREAK', 'LONG_BREAK']),
   plannedDuration: z
     .number()
-    .min(60, 'Session must be at least 1 minute')
-    .max(3600, 'Session must be less than 1 hour'),
+    .positive('Session duration must be a positive number'),
   startTime: z.string().datetime(),
   tags: z.array(z.string()).optional(),
   notes: z.string().max(500, 'Notes must be less than 500 characters').optional(),
