@@ -10,47 +10,39 @@ let timerState = {
   sessionType: 'pomodoro'
 };
 
-// High-precision timer using performance.now()
+// Timer function with proper error handling
 function startTimer() {
+  // Clear any existing timer
   if (timerId) {
-    clearInterval(timerId);
+    clearTimeout(timerId);
+    timerId = null;
   }
-  
+
+  // Validate timer state
+  if (!timerState.timeLeft || timerState.timeLeft <= 0) {
+    console.error('[TIMER WORKER] Cannot start timer - invalid timeLeft:', timerState.timeLeft);
+    return;
+  }
+
   timerState.isRunning = true;
   timerState.startTime = performance.now();
-  
-  // Use setInterval with 100ms precision for better accuracy
-  timerId = setInterval(() => {
-    if (timerState.isRunning && timerState.timeLeft > 0) {
-      const now = performance.now();
-      const elapsed = Math.floor((now - timerState.startTime) / 1000);
-      const newTimeLeft = Math.max(0, timerState.timeLeft - elapsed);
-      
-      if (newTimeLeft !== timerState.timeLeft) {
-        timerState.timeLeft = newTimeLeft;
-        timerState.startTime = now; // Reset start time for next interval
-        
-        // Send update to main thread
-        self.postMessage({
-          type: 'TIMER_UPDATE',
-          timeLeft: timerState.timeLeft,
-          isRunning: timerState.isRunning
-        });
-        
-        // Check if timer completed
-        if (timerState.timeLeft <= 0) {
-          timerState.isRunning = false;
-          clearInterval(timerId);
-          timerId = null;
-          
-          self.postMessage({
-            type: 'TIMER_COMPLETE',
-            sessionType: timerState.sessionType
-          });
-        }
-      }
-    }
-  }, 100); // 100ms intervals for smooth updates
+
+  // Send initial update
+  self.postMessage({
+    type: 'TIMER_UPDATE',
+    timeLeft: timerState.timeLeft,
+    isRunning: timerState.isRunning
+  });
+
+  // Send initial update
+  self.postMessage({
+    type: 'TIMER_UPDATE',
+    timeLeft: timerState.timeLeft,
+    isRunning: timerState.isRunning
+  });
+
+  // Note: Main thread timer now handles the countdown
+  // Worker is kept for potential future background functionality
 }
 
 function pauseTimer() {
@@ -59,7 +51,7 @@ function pauseTimer() {
     timerState.pausedTime = performance.now();
     
     if (timerId) {
-      clearInterval(timerId);
+      clearTimeout(timerId);
       timerId = null;
     }
     
@@ -112,15 +104,17 @@ function getTimerState() {
 // Handle messages from main thread
 self.addEventListener('message', (event) => {
   const { type, payload } = event.data;
-  
+
   switch (type) {
     case 'START_TIMER':
-      if (payload.timeLeft) {
-        timerState.timeLeft = payload.timeLeft;
+      // Validate payload
+      if (!payload || typeof payload.timeLeft !== 'number' || payload.timeLeft <= 0) {
+        console.error('[TIMER WORKER] Invalid START_TIMER payload:', payload);
+        return;
       }
-      if (payload.sessionType) {
-        timerState.sessionType = payload.sessionType;
-      }
+
+      timerState.timeLeft = payload.timeLeft;
+      timerState.sessionType = payload.sessionType || 'pomodoro';
       startTimer();
       break;
       
@@ -161,3 +155,6 @@ self.addEventListener('beforeunload', () => {
     clearInterval(timerId);
   }
 });
+
+// Send ready message when worker is initialized
+self.postMessage({ type: 'WORKER_READY' });

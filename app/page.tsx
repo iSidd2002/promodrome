@@ -6,7 +6,7 @@ import Link from 'next/link';
 import DataMigration from '@/components/DataMigration';
 import { useBackgroundTimer } from '@/hooks/useBackgroundTimer';
 import { useAudioNotifications } from '@/hooks/useAudioNotifications';
-import { usePerformanceMonitor } from '@/hooks/usePerformanceMonitor';
+// import { usePerformanceMonitor } from '@/hooks/usePerformanceMonitor';
 import OptimizedTimerDisplay from '@/components/OptimizedTimerDisplay';
 import GuestPreview from '@/components/GuestPreview';
 import AuthBanner from '@/components/AuthBanner';
@@ -37,8 +37,7 @@ export default function PomodoroTimer() {
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
   const [sessionStartTime, setSessionStartTime] = useState<Date | null>(null);
 
-  // Performance optimization - prevent unnecessary re-renders
-  const [lastUpdateTime, setLastUpdateTime] = useState<number>(Date.now());
+
 
   // Session tracking
   const [pomodorosCompleted, setPomodorosCompleted] = useState(0);
@@ -64,8 +63,8 @@ export default function PomodoroTimer() {
   // Refs for timer management
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Performance monitoring
-  const { getMetrics } = usePerformanceMonitor('PomodoroTimer');
+  // Performance monitoring (disabled - was causing render issues)
+  // const { getMetrics } = usePerformanceMonitor('PomodoroTimer');
 
   // Audio notifications
   const { notify: playNotification } = useAudioNotifications({
@@ -74,13 +73,8 @@ export default function PomodoroTimer() {
 
   // Background timer callbacks (memoized for performance)
   const handleTimerUpdate = useCallback((newTimeLeft: number) => {
-    const now = Date.now();
-    // Throttle updates to prevent excessive re-renders
-    if (now - lastUpdateTime > 50) { // Max 20 FPS
-      setTimeLeft(newTimeLeft);
-      setLastUpdateTime(now);
-    }
-  }, [lastUpdateTime]);
+    setTimeLeft(newTimeLeft);
+  }, []);
 
   const handleTimerComplete = useCallback(async (sessionType: string) => {
     setTimerState('idle');
@@ -229,17 +223,26 @@ export default function PomodoroTimer() {
   const startSession = async (sessionType: SessionType, duration: number) => {
     if (!session) return null;
 
+    // Convert frontend session types to API format
+    const sessionTypeMap: Record<SessionType, string> = {
+      'pomodoro': 'POMODORO',
+      'shortBreak': 'SHORT_BREAK',
+      'longBreak': 'LONG_BREAK'
+    };
+
     try {
+      const requestBody = {
+        sessionType: sessionTypeMap[sessionType],
+        plannedDuration: duration * 60, // Convert minutes to seconds
+        startTime: new Date().toISOString(),
+      };
+
       const response = await fetch('/api/sessions', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          sessionType: sessionType.toUpperCase(),
-          plannedDuration: duration * 60, // Convert minutes to seconds
-          startTime: new Date().toISOString(),
-        }),
+        body: JSON.stringify(requestBody),
       });
 
       if (response.ok) {
