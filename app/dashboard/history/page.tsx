@@ -7,11 +7,15 @@ import Link from 'next/link';
 
 interface PomodoroSession {
   id: string;
-  type: 'POMODORO' | 'SHORT_BREAK' | 'LONG_BREAK';
-  duration: number;
+  sessionType: 'POMODORO' | 'SHORT_BREAK' | 'LONG_BREAK';
+  plannedDuration: number;
+  actualDuration?: number;
   completed: boolean;
-  startedAt: string;
-  completedAt?: string;
+  startTime: string;
+  endTime?: string;
+  notes?: string;
+  tags: string[];
+  createdAt: string;
 }
 
 export default function HistoryPage() {
@@ -36,10 +40,25 @@ export default function HistoryPage() {
   const loadSessions = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch(`/api/sessions?filter=${filter}`);
+      let url = '/api/sessions?limit=50';
+
+      // Add date filtering based on filter selection
+      const now = new Date();
+      if (filter === 'today') {
+        const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        url += `&startDate=${startOfDay.toISOString()}`;
+      } else if (filter === 'week') {
+        const startOfWeek = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        url += `&startDate=${startOfWeek.toISOString()}`;
+      } else if (filter === 'month') {
+        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+        url += `&startDate=${startOfMonth.toISOString()}`;
+      }
+
+      const response = await fetch(url);
       if (response.ok) {
         const data = await response.json();
-        setSessions(data);
+        setSessions(data.data || []);
       }
     } catch (error) {
       console.error('Failed to load sessions:', error);
@@ -53,7 +72,8 @@ export default function HistoryPage() {
     return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
-  const formatDuration = (minutes: number) => {
+  const formatDuration = (seconds: number) => {
+    const minutes = Math.floor(seconds / 60);
     return `${minutes}m`;
   };
 
@@ -85,16 +105,16 @@ export default function HistoryPage() {
 
   const getStats = () => {
     const completedSessions = sessions.filter(s => s.completed);
-    const totalPomodoros = completedSessions.filter(s => s.type === 'POMODORO').length;
+    const totalPomodoros = completedSessions.filter(s => s.sessionType === 'POMODORO').length;
     const totalFocusTime = completedSessions
-      .filter(s => s.type === 'POMODORO')
-      .reduce((total, s) => total + s.duration, 0);
-    
+      .filter(s => s.sessionType === 'POMODORO')
+      .reduce((total, s) => total + (s.actualDuration || s.plannedDuration), 0);
+
     return {
       totalSessions: completedSessions.length,
       totalPomodoros,
-      totalFocusTime,
-      averageSession: completedSessions.length > 0 ? Math.round(totalFocusTime / totalPomodoros) || 0 : 0
+      totalFocusTime: Math.floor(totalFocusTime / 60), // Convert to minutes
+      averageSession: totalPomodoros > 0 ? Math.round(totalFocusTime / totalPomodoros / 60) || 0 : 0
     };
   };
 
@@ -205,29 +225,55 @@ export default function HistoryPage() {
             ) : (
               sessions.map((session) => (
                 <div key={session.id} className="p-6 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-4">
-                      <div className="text-2xl">
-                        {getSessionIcon(session.type)}
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-start space-x-4 flex-1">
+                      <div className="text-2xl mt-1">
+                        {getSessionIcon(session.sessionType)}
                       </div>
-                      
-                      <div>
-                        <div className="flex items-center space-x-2">
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${getSessionColor(session.type)}`}>
-                            {session.type.replace('_', ' ')}
+
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-2 mb-1">
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${getSessionColor(session.sessionType)}`}>
+                            {session.sessionType.replace('_', ' ')}
                           </span>
                           <span className="text-sm text-gray-600 dark:text-gray-300">
-                            {formatDuration(session.duration)}
+                            {formatDuration(session.actualDuration || session.plannedDuration)}
                           </span>
                         </div>
-                        
-                        <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                          {formatDate(session.startedAt)}
+
+                        <div className="text-sm text-gray-500 dark:text-gray-400 mb-2">
+                          {formatDate(session.startTime)}
                         </div>
+
+                        {/* Show accomplishments for completed pomodoro sessions */}
+                        {session.sessionType === 'POMODORO' && session.completed && session.notes && (
+                          <div className="mt-3 p-3 bg-gray-50 dark:bg-gray-600 rounded-lg">
+                            <div className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                              Accomplishments:
+                            </div>
+                            <div className="text-sm text-gray-800 dark:text-gray-200 whitespace-pre-wrap">
+                              {session.notes}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Show tags if any */}
+                        {session.tags && session.tags.length > 0 && (
+                          <div className="mt-2 flex flex-wrap gap-1">
+                            {session.tags.map((tag, index) => (
+                              <span
+                                key={index}
+                                className="px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 text-xs rounded-full"
+                              >
+                                #{tag}
+                              </span>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     </div>
-                    
-                    <div className="flex items-center">
+
+                    <div className="flex items-center ml-4">
                       {session.completed ? (
                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200">
                           ✓ Completed

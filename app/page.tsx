@@ -10,6 +10,8 @@ import { usePerformanceMonitor } from '@/hooks/usePerformanceMonitor';
 import OptimizedTimerDisplay from '@/components/OptimizedTimerDisplay';
 import GuestPreview from '@/components/GuestPreview';
 import AuthBanner from '@/components/AuthBanner';
+import SessionAccomplishmentModal from '@/components/SessionAccomplishmentModal';
+import PreviousSessionDisplay from '@/components/PreviousSessionDisplay';
 
 // Types for our application
 type SessionType = 'pomodoro' | 'shortBreak' | 'longBreak';
@@ -51,6 +53,13 @@ export default function PomodoroTimer() {
 
   // UI state
   const [showSettings, setShowSettings] = useState(false);
+  const [showAccomplishmentModal, setShowAccomplishmentModal] = useState(false);
+  const [showPreviousSession, setShowPreviousSession] = useState(false);
+  const [completedSessionData, setCompletedSessionData] = useState<{
+    sessionId: string;
+    sessionType: SessionType;
+    duration: number;
+  } | null>(null);
 
   // Refs for timer management
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -79,7 +88,19 @@ export default function PomodoroTimer() {
     // Play notification
     await playNotification(sessionType);
 
-    // Complete the current session in the database
+    // For pomodoro sessions, show accomplishment modal before completing
+    if (currentSession === 'pomodoro' && currentSessionId) {
+      setCompletedSessionData({
+        sessionId: currentSessionId,
+        sessionType: currentSession,
+        duration: Math.ceil(timeLeft / 60) || getSessionDuration(currentSession) / 60
+      });
+      setShowAccomplishmentModal(true);
+      // Don't complete the session yet - wait for accomplishment modal
+      return;
+    }
+
+    // For break sessions, complete immediately
     if (currentSessionId) {
       await completeSession(currentSessionId, true);
       setCurrentSessionId(null);
@@ -93,7 +114,7 @@ export default function PomodoroTimer() {
     const nextSession = getNextSession();
     setCurrentSession(nextSession);
     setTimeLeft(getSessionDuration(nextSession));
-  }, [currentSessionId, currentSession, playNotification]);
+  }, [currentSessionId, currentSession, playNotification, timeLeft]);
 
   const handleTimerPaused = useCallback(() => {
     setTimerState('paused');
@@ -232,19 +253,25 @@ export default function PomodoroTimer() {
   };
 
   // Complete a session in the database
-  const completeSession = async (sessionId: string, completed: boolean = true) => {
+  const completeSession = async (sessionId: string, completed: boolean = true, notes?: string) => {
     if (!session || !sessionId) return;
 
     try {
+      const updateData: any = {
+        completed,
+        endTime: new Date().toISOString(),
+      };
+
+      if (notes !== undefined) {
+        updateData.notes = notes;
+      }
+
       await fetch(`/api/sessions/${sessionId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          completed,
-          endTime: new Date().toISOString(),
-        }),
+        body: JSON.stringify(updateData),
       });
     } catch (error) {
       console.error('Failed to complete session:', error);
@@ -255,6 +282,66 @@ export default function PomodoroTimer() {
   useEffect(() => {
     localStorage.setItem('pomodorosCompleted', pomodorosCompleted.toString());
   }, [pomodorosCompleted]);
+
+  // Handle accomplishment modal save
+  const handleAccomplishmentSave = async (accomplishment: string) => {
+    if (!completedSessionData) return;
+
+    // Complete the session with the accomplishment
+    await completeSession(completedSessionData.sessionId, true, accomplishment);
+
+    // Update pomodoros completed count
+    setPomodorosCompleted(prev => prev + 1);
+
+    // Clear session tracking
+    setCurrentSessionId(null);
+    setSessionStartTime(null);
+    setCompletedSessionData(null);
+
+    // Move to next session
+    const nextSession = getNextSession();
+    setCurrentSession(nextSession);
+    setTimeLeft(getSessionDuration(nextSession));
+  };
+
+  // Handle showing previous session when starting a new pomodoro
+  const handleStartSession = async () => {
+    if (!isWorkerReady) return;
+
+    // If starting a pomodoro session and user is authenticated, show previous session first
+    if (currentSession === 'pomodoro' && session && timerState === 'idle') {
+      setShowPreviousSession(true);
+      return;
+    }
+
+    // Otherwise start the timer normally
+    startTimerNormally();
+  };
+
+  const startTimerNormally = async () => {
+    if (timerState === 'running') {
+      // Pause timer
+      pauseBackgroundTimer();
+      setTimerState('paused');
+    } else if (timerState === 'paused') {
+      // Resume timer
+      resumeBackgroundTimer();
+      setTimerState('running');
+    } else {
+      // Start new timer
+      setTimerState('running');
+      startBackgroundTimer(timeLeft, currentSession);
+
+      // Start a new session if we're starting from idle
+      if (session) {
+        const sessionId = await startSession(currentSession, Math.ceil(timeLeft / 60));
+        if (sessionId) {
+          setCurrentSessionId(sessionId);
+          setSessionStartTime(new Date());
+        }
+      }
+    }
+  };
 
   // Helper function to format time display
   const formatTime = (seconds: number): string => {
@@ -437,32 +524,7 @@ export default function PomodoroTimer() {
           {session ? (
             <div className="flex flex-col sm:flex-row justify-center gap-3 sm:gap-4 mb-6 md:mb-8 px-4">
             <button
-              onClick={async () => {
-                if (!isWorkerReady) return;
-
-                if (timerState === 'running') {
-                  // Pause timer
-                  pauseBackgroundTimer();
-                  setTimerState('paused');
-                } else if (timerState === 'paused') {
-                  // Resume timer
-                  resumeBackgroundTimer();
-                  setTimerState('running');
-                } else {
-                  // Start new timer
-                  setTimerState('running');
-                  startBackgroundTimer(timeLeft, currentSession);
-
-                  // Start a new session if we're starting from idle
-                  if (session) {
-                    const sessionId = await startSession(currentSession, Math.ceil(timeLeft / 60));
-                    if (sessionId) {
-                      setCurrentSessionId(sessionId);
-                      setSessionStartTime(new Date());
-                    }
-                  }
-                }
-              }}
+              onClick={handleStartSession}
               className={`w-full sm:w-auto px-6 sm:px-8 py-3 rounded-full font-semibold text-white transition-all duration-200 transform hover:scale-105 active:scale-95 ${
                 timerState === 'running'
                   ? 'bg-orange-500 hover:bg-orange-600 shadow-lg'
@@ -672,6 +734,27 @@ export default function PomodoroTimer() {
 
       {/* Data Migration Modal */}
       <DataMigration />
+
+      {/* Session Accomplishment Modal */}
+      <SessionAccomplishmentModal
+        isOpen={showAccomplishmentModal}
+        onClose={() => {
+          setShowAccomplishmentModal(false);
+          setCompletedSessionData(null);
+        }}
+        onSave={handleAccomplishmentSave}
+        sessionType={completedSessionData?.sessionType || 'pomodoro'}
+        duration={completedSessionData?.duration || 25}
+      />
+
+      {/* Previous Session Display Modal */}
+      <PreviousSessionDisplay
+        isVisible={showPreviousSession}
+        onClose={() => {
+          setShowPreviousSession(false);
+          startTimerNormally();
+        }}
+      />
     </div>
   );
 }
